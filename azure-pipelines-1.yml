@@ -1,0 +1,119 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- script: echo Hello, world!
+  displayName: 'Run a one-line script'
+
+- script: |
+    echo Add other tasks to build, test, and deploy your project.
+    echo See https://aka.ms/yaml
+  displayName: 'Run a multi-line script'
+
+<!-- public/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TaskMaster</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #f4f4f4;
+    }
+    h1 {
+      margin: 20px 0;
+    }
+    #task-form {
+      margin: 20px;
+    }
+    input, button {
+      margin: 5px;
+    }
+    #task-list {
+      list-style-type: none;
+      padding: 0;
+    }
+    .task-item {
+      background: white;
+      padding: 10px;
+      margin: 5px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      width: 300px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>TaskMaster</h1>
+  <div id="task-form">
+    <input type="text" id="description" placeholder="Task description" />
+    <input type="text" id="priority" placeholder="Priority" />
+    <input type="date" id="dueDate" />
+    <button onclick="addTask()">Add Task</button>
+  </div>
+  <ul id="task-list"></ul>
+
+  <script>
+    const apiUrl = '/tasks';
+
+    async function fetchTasks() {
+      const response = await fetch(apiUrl);
+      const tasks = await response.json();
+      const taskList = document.getElementById('task-list');
+      taskList.innerHTML = '';
+      tasks.forEach(task => {
+        const li = document.createElement('li');
+        li.className = 'task-item';
+        li.innerHTML = `
+          <span>${task.description} (Priority: ${task.priority}, Due: ${task.dueDate})</span>
+          <button onclick="deleteTask(${task.id})">Delete</button>
+        `;
+        taskList.appendChild(li);
+      });
+    }
+
+    async function addTask() {
+      const description = document.getElementById('description').value;
+      const priority = document.getElementById('priority').value;
+      const dueDate = document.getElementById('dueDate').value;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ description, priority, dueDate })
+      });
+      const result = await response.json();
+      fetchTasks();
+    }
+
+    async function deleteTask(id) {
+      await fetch(`${apiUrl}/${id}`, {
+        method: 'DELETE'
+      });
+      fetchTasks();
+    }
+
+    // Initial fetch of tasks
+    fetchTasks();
+  </script>
+</body>
+</html>
