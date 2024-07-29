@@ -1,0 +1,96 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- script: echo Hello, world!
+  displayName: 'Run a one-line script'
+
+- script: |
+    echo Add other tasks to build, test, and deploy your project.
+    echo See https://aka.ms/yaml
+  displayName: 'Run a multi-line script'
+
+// server.js
+const express = require('express');
+const sqlite3 = require('sqlite3').verbose();
+const bodyParser = require('body-parser');
+const path = require('path');
+
+const app = express();
+const port = 3000;
+
+// Configuração do middleware
+app.use(bodyParser.json());
+app.use(express.static('public'));
+
+// Configuração do banco de dados SQLite
+const db = new sqlite3.Database(':memory:');
+
+db.serialize(() => {
+  db.run("CREATE TABLE tasks (id INTEGER PRIMARY KEY AUTOINCREMENT, description TEXT, priority TEXT, dueDate TEXT)");
+});
+
+// Endpoint para obter todas as tarefas
+app.get('/tasks', (req, res) => {
+  db.all("SELECT * FROM tasks", (err, rows) => {
+    if (err) {
+      res.status(500).send(err.message);
+    } else {
+      res.json(rows);
+    }
+  });
+});
+
+// Endpoint para criar uma nova tarefa
+app.post('/tasks', (req, res) => {
+  const { description, priority, dueDate } = req.body;
+  db.run("INSERT INTO tasks (description, priority, dueDate) VALUES (?, ?, ?)", [description, priority, dueDate], function(err) {
+    if (err) {
+      res.status(500).send(err.message);
+    } else {
+      res.json({ id: this.lastID });
+    }
+  });
+});
+
+// Endpoint para atualizar uma tarefa
+app.put('/tasks/:id', (req, res) => {
+  const { id } = req.params;
+  const { description, priority, dueDate } = req.body;
+  db.run("UPDATE tasks SET description = ?, priority = ?, dueDate = ? WHERE id = ?", [description, priority, dueDate, id], function(err) {
+    if (err) {
+      res.status(500).send(err.message);
+    } else {
+      res.json({ changes: this.changes });
+    }
+  });
+});
+
+// Endpoint para excluir uma tarefa
+app.delete('/tasks/:id', (req, res) => {
+  const { id } = req.params;
+  db.run("DELETE FROM tasks WHERE id = ?", id, function(err) {
+    if (err) {
+      res.status(500).send(err.message);
+    } else {
+      res.json({ changes: this.changes });
+    }
+  });
+});
+
+// Servir arquivos estáticos (frontend)
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
+});
